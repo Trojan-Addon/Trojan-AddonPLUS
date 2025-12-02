@@ -4,11 +4,12 @@ import com.nnpg.glazed.GlazedAddon;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.render.ShapeMode;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.LightType;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 
@@ -95,6 +96,13 @@ public class LightDebug extends Module {
         .build()
     );
 
+    private final Setting<ShapeMode> shapeMode = sgRender.add(new EnumSetting.Builder<ShapeMode>()
+        .name("shape-mode")
+        .description("How the boxes are rendered")
+        .defaultValue(ShapeMode.Both)
+        .build()
+    );
+
     private final Set<BlockPos> lightBlocks = ConcurrentHashMap.newKeySet();
     private ExecutorService threadPool;
 
@@ -134,9 +142,9 @@ public class LightDebug extends Module {
             }
         }
 
-        // Render all blocks
+        // Render all blocks correctly using Box and ShapeMode
         for (BlockPos pos : new HashSet<>(lightBlocks)) {
-            event.renderer.box(pos, sideColor.get(), lineColor.get());
+            event.renderer.box(new Box(pos), sideColor.get(), lineColor.get(), shapeMode.get(), 0);
         }
     }
 
@@ -160,6 +168,7 @@ public class LightDebug extends Module {
             }
         }
 
+        // Remove outdated blocks in this chunk
         lightBlocks.removeIf(pos -> new ChunkPos(pos).equals(cpos) && !chunkLightBlocks.contains(pos));
         lightBlocks.addAll(chunkLightBlocks);
     }
