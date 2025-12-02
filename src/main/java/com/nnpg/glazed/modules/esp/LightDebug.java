@@ -4,7 +4,6 @@ import com.nnpg.glazed.GlazedAddon;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.render.Renderer3D;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.util.math.BlockPos;
@@ -28,7 +27,7 @@ public class LightDebug extends Module {
         .description("Radius of chunks to scan around the player.")
         .defaultValue(4)
         .min(1)
-        .max(12) // increased max radius
+        .max(12)
         .sliderMax(12)
         .build()
     );
@@ -82,15 +81,15 @@ public class LightDebug extends Module {
         .build()
     );
 
-    private final Setting<SettingColor> color = sgRender.add(new ColorSetting.Builder()
-        .name("light-color")
-        .description("Color of highlighted light blocks")
+    private final Setting<SettingColor> sideColor = sgRender.add(new ColorSetting.Builder()
+        .name("side-color")
+        .description("Side color of highlighted blocks")
         .defaultValue(new SettingColor(255, 255, 0, 60))
         .build()
     );
 
-    private final Setting<SettingColor> outline = sgRender.add(new ColorSetting.Builder()
-        .name("outline-color")
+    private final Setting<SettingColor> lineColor = sgRender.add(new ColorSetting.Builder()
+        .name("line-color")
         .description("Outline color of highlighted blocks")
         .defaultValue(new SettingColor(255, 255, 0, 200))
         .build()
@@ -135,7 +134,10 @@ public class LightDebug extends Module {
             }
         }
 
-        renderBlocks(event);
+        // Render all blocks
+        for (BlockPos pos : new HashSet<>(lightBlocks)) {
+            event.renderer.box(pos, sideColor.get(), lineColor.get());
+        }
     }
 
     private void scanChunk(int chunkX, int chunkZ) {
@@ -158,17 +160,7 @@ public class LightDebug extends Module {
             }
         }
 
-        // Remove positions no longer lit
         lightBlocks.removeIf(pos -> new ChunkPos(pos).equals(cpos) && !chunkLightBlocks.contains(pos));
-
-        // Add updated positions
         lightBlocks.addAll(chunkLightBlocks);
-    }
-
-    private void renderBlocks(Render3DEvent event) {
-        for (BlockPos pos : new HashSet<>(lightBlocks)) {
-            Renderer3D.renderFilled(new net.minecraft.util.math.Box(pos), color.get());
-            Renderer3D.renderOutline(new net.minecraft.util.math.Box(pos), outline.get(), 1);
-        }
     }
 }
